@@ -97,7 +97,7 @@ The platform helps utilities prioritize inspections, anticipate peak load condit
 ---
 
 ## Project Structure
-GridSentinel AI/
+GridSentinel-AI/
 │
 ├── backend/
 │   ├── app.py
@@ -105,6 +105,7 @@ GridSentinel AI/
 │   ├── constants.py
 │   ├── auth_utils.py
 │   ├── local_llm_stub.py
+│   │
 │   └── ai/
 │       ├── demand_forecasting.py
 │       └── peer_analysis.py
@@ -119,6 +120,7 @@ GridSentinel AI/
 ├── data/
 │   └── csv_inputs/
 │
+├── .gitignore
 └── README.md
 ---
 
