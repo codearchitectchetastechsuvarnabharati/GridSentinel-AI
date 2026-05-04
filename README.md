@@ -96,35 +96,6 @@ The platform helps utilities prioritize inspections, anticipate peak load condit
 
 ---
 
-## Project Structure
-'''
-GridSentinel-AI/
-│
-├── backend/
-│   ├── app.py
-│   ├── smart_meter_ai.py
-│   ├── constants.py
-│   ├── auth_utils.py
-│   ├── local_llm_stub.py
-│   │
-│   └── ai/
-│       ├── demand_forecasting.py
-│       └── peer_analysis.py
-│
-├── templates/
-│   ├── login.html
-│   ├── dashboard.html
-│   ├── charts.html
-│   ├── profile.html
-│   └── admin.html
-│
-├── data/
-│   └── csv_inputs/
-│
-├── .gitignore
-└── README.md
----
-
 ## How the System Works (High‑Level Flow)
 
 1. Smart meter data is ingested from CSV files  
