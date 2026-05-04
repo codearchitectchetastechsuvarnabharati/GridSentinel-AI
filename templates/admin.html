@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ app_name }} – Admin Console</title>
+
+    <!-- Bootstrap CSS -->
+    https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar navbar-dark bg-danger px-4">
+    <div>
+        <span class="navbar-brand">
+            {{ app_name }} – Admin Console
+        </span>
+        <small class="text-light ms-2">
+            Internal Use Only
+        </small>
+    </div>
+
+    <div>
+        <span class="badge bg-light text-dark me-3">
+            v{{ version }}
+        </span>
+
+        <!-- ✅ CORRECT FLASK ROUTE -->
+        /dashboard
+            Dashboard
+        </a>
+    </div>
+</nav>
+
+<!-- ================= CONTENT ================= -->
+<div class="container mt-4">
+
+    <!-- ---------- USERS SECTION ---------- -->
+    <h4 class="mb-3">Registered BESCOM Users</h4>
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Created At</th>
+                <th>Last Login</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users.itertuples() %}
+            <tr>
+                <td>{{ u.username }}</td>
+                <td>{{ u.role }}</td>
+                <td>{{ u.created_at }}</td>
+                <td>{{ u.last_login }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ---------- AUDIT LOG SECTION ---------- -->
+    <h4 class="mt-5 mb-3">Audit Log</h4>
+
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in audit.itertuples() %}
+            <tr>
+                <td>{{ a.timestamp }}</td>
+                <td>{{ a.user }}</td>
+                <td>{{ a.action }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ---------- ADMIN NOTE ---------- -->
+    <div class="alert alert-warning mt-4">
+        <strong>Note:</strong>
+        This console is restricted to authorized administrators.
+        All user activity is logged for audit and compliance purposes.
+    </div>
+
+</div>
+
+<!-- ================= FOOTER ================= -->
+<footer class="text-center text-muted mt-5 mb-3">
+    <small>
+        {{ footer }} · Version {{ version }}
+    </small>
+</footer>
+
+</body>
+</html>

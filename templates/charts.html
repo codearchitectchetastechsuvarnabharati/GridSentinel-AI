@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BESCOM – Charts</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<nav class="navbar navbar-dark bg-primary px-4">
+    <span class="navbar-brand">BESCOM – Analytics</span>
+    <div>
+        <a href="/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        <a href="/export/pdf" class="btn btn-warning btn-sm">Download Report</a>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h4>Zone Forecast vs Peak (with Confidence Band)</h4>
+    <canvas id="zoneChart"></canvas>
+</div>
+
+<script>
+fetch("/api/chart-data")
+.then(res => res.json())
+.then(data => {
+
+    new Chart(document.getElementById("zoneChart"), {
+        type: "line",
+        data: {
+            labels: data.zones,
+            datasets: [
+                {
+                    label: "Forecast Load",
+                    data: data.forecast,
+                    borderColor: "blue",
+                    fill: false
+                },
+                {
+                    label: "Peak Load",
+                    data: data.peak,
+                    borderColor: "orange",
+                    fill: false
+                },
+                {
+                    label: "Upper Confidence (+10%)",
+                    data: data.upper,
+                    borderColor: "rgba(0,0,255,0.3)",
+                    borderDash: [5,5],
+                    fill: false
+                },
+                {
+                    label: "Lower Confidence (-10%)",
+                    data: data.lower,
+                    borderColor: "rgba(0,0,255,0.3)",
+                    borderDash: [5,5],
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: "bottom"
+                }
+            }
+        }
+    });
+
+});
+</script>
+
+</body>
+</html>

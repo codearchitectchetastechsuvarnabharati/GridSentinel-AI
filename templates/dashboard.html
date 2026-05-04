@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ app_name }} – Dashboard</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar navbar-dark bg-primary px-4">
+    <div>
+        <span class="navbar-brand">{{ app_name }}</span>
+        <small class="text-light ms-2">{{ tagline }}</small>
+    </div>
+
+    <div>
+        <span class="badge bg-light text-dark me-3">
+            v{{ version }}
+        </span>
+
+        <!-- ✅ CORRECT LINKS -->
+        <a href="/charts" class="btn btn-outline-light btn-sm me-2">
+            Charts
+        </a>
+        <a href="/profile" class="btn btn-outline-light btn-sm me-2">
+            Profile
+        </a>
+        <a href="/logout" class="btn btn-outline-light btn-sm">
+            Logout
+        </a>
+    </div>
+</nav>
+
+<!-- ================= CONTENT ================= -->
+<div class="container mt-4">
+
+    <div class="alert alert-secondary text-center">
+        Running analytics on the latest available operational dataset.
+    </div>
+
+    <!-- ================= KPI SECTION ================= -->
+    <div class="row text-center mb-4">
+        <div class="col">
+            <h6>Total Zones</h6>
+            <h2>{{ zones|length }}</h2>
+        </div>
+
+        <div class="col">
+            <h6>High‑Risk Zones</h6>
+            <h2>
+                {{ zones[zones.risk_level == 'HIGH']|length if zones is defined else 0 }}
+            </h2>
+        </div>
+
+        <div class="col">
+            <h6>Inspection Candidates</h6>
+            <h2>{{ inspections|length }}</h2>
+        </div>
+    </div>
+
+    <!-- ================= ZONE RISK TABLE ================= -->
+    <h4>Zone Load Risk Assessment</h4>
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Zone</th>
+                <th>Forecast Load</th>
+                <th>Peak Load</th>
+                <th>Risk Level</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for z in zones.itertuples() %}
+            <tr>
+                <td>{{ z.zone_id }}</td>
+                <td>{{ z.forecast_load }}</td>
+                <td>{{ z.historical_peak }}</td>
+                <td><strong>{{ z.risk_level }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ================= INSPECTION TABLE ================= -->
+    <h4>Inspection Priority</h4>
+    <table class="table table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>Meter ID</th>
+                <th>Zone</th>
+                <th>Risk Score</th>
+                <th>Why Flagged?</th>
+                <th>Recommended Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in inspections.itertuples() %}
+            <tr>
+                <td>{{ i.meter_id }}</td>
+                <td>{{ i.zone_id }}</td>
+                <td>{{ i.risk_score }}</td>
+                <td>{{ i.reason }}</td>
+                <td>Field Inspection</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ================= AI INFO ================= -->
+    <div class="alert alert-info mt-4">
+        <strong>AI Insights:</strong><br>
+        • Localized demand forecasting using rolling statistics<br>
+        • Unsupervised anomaly detection with peer‑group validation<br>
+        • Outputs are explainable and advisory only
+    </div>
+
+    <div class="alert alert-warning text-center">
+        Decision‑support only · No automated enforcement
+    </div>
+</div>
+
+<!-- ================= FOOTER ================= -->
+<footer class="text-center text-muted mt-5 mb-3">
+    <small>{{ footer }} · Version {{ version }}</small>
+</footer>
+
+</body>
+</html>
