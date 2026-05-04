@@ -97,6 +97,7 @@ The platform helps utilities prioritize inspections, anticipate peak load condit
 ---
 
 ## Project Structure
+'''
 GridSentinel-AI/
 │
 ├── backend/
