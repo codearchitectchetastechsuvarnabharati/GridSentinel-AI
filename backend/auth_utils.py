@@ -16,10 +16,16 @@ REQUIRED_COLUMNS = ["username", "role", "created_at", "last_login"]
 # AUTH / AUTO-REGISTRATION
 # -------------------------------------------------
 def validate_or_register_user(username):
-    if not username.endswith("@bescom.co.in"):
+    if not (username.endswith("@bescom.co.in") or username.endswith("@bescom.in")):
         return None, "Unauthorized"
 
     os.makedirs(DATA_DIR, exist_ok=True)
+
+    if username.endswith("@bescom.in"):
+        role = "admin"
+    else:
+        role = "engineer"
+    
 
     # Load or create dataframe
     if os.path.exists(USERS_FILE):
@@ -37,7 +43,7 @@ def validate_or_register_user(username):
     if df[df["username"] == username].empty:
         df.loc[len(df)] = {
             "username": username,
-            "role": "ENGINEER",
+            "role": role,
             "created_at": datetime.now(),
             "last_login": datetime.now()
         }
@@ -45,10 +51,10 @@ def validate_or_register_user(username):
         df.loc[df["username"] == username, "last_login"] = datetime.now()
 
     # ✅ ATOMIC WRITE (WINDOWS‑SAFE)
-    with NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+    with NamedTemporaryFile(delete=False, suffix=".xlsx")as tmp:
         temp_path = tmp.name
 
     df.to_excel(temp_path, index=False)
     os.replace(temp_path, USERS_FILE)
 
-    return "ENGINEER", None
+    return role, None

@@ -4,6 +4,16 @@ import pandas as pd
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 
+
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from flask import send_file
+
+from constants import APP_NAME, APP_TAGLINE, PLATFORM_VERSION, FOOTER_TEXT
+from auth_utils import validate_or_register_user
+from smart_meter_ai import run_smart_meter_ai_pipeline
+from db_backup import init_db, get_connection
+
 from constants import APP_NAME, APP_TAGLINE, PLATFORM_VERSION, FOOTER_TEXT
 from auth_utils import validate_or_register_user
 from smart_meter_ai import run_smart_meter_ai_pipeline
@@ -54,24 +64,58 @@ def audit(user, action):
     os.replace(temp_path, AUDIT_FILE)
 
 # -------------------------------------------------
+# REGISTER
+# -------------------------------------------------
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        user = request.form.get("username")
+
+        if not user or "@" not in user:
+            return "Invalid email", 400
+
+        if user.endswith("@bescom.in"):
+            role = "admin"
+        elif user.endswith("@bescom.co.in"):
+            role = "engineer"
+        else:
+            return "Only BESCOM users allowed", 403
+
+        session["user"] = user
+        session["role"] = role
+
+        return redirect("/dashboard")
+
+    return render_template("register.html")
+# -------------------------------------------------
 # LOGIN
 # -------------------------------------------------
 @app.route("/", methods=["GET", "POST"])
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == "POST":
-        user = request.form["username"]
-
-        role, err = validate_or_register_user(user)
+    if request.method=="POST":
+        user=request.form["username"]
+    # VALIDATE USER
+        role,err =validate_or_register_user(user)
         if err:
-            return "Unauthorized BESCOM user", 403
+            return"unauthorized BESCOM user",403
+        # STORE SESSION
+        session["user"]=user
+        session["role"]=role
+        # SAVE IN DB
+        conn=get_connection()
+        cur=conn.cursor()
+        cur.execute(
+    "INSERT INTO users_backup (username, role, timestamp) VALUES (?, ?, datetime('now'))",
+    (user, role)
+)
+        conn.commit()
+        conn.close()
 
-        session["user"] = user
-        session["role"] = role
-        audit(user, "LOGIN")
+        # AUDIT LOG
+        audit(user,"LOGIN")
 
         return redirect("/dashboard")
-
     return render_template(
         "login.html",
         app_name=APP_NAME,
@@ -155,12 +199,92 @@ def charts():
     )
 
 # -------------------------------------------------
+# EXPORT
+# -------------------------------------------------
+
+@app.route("/export")
+def export():
+
+    if "user" not in session:
+        return redirect("/login")
+
+    # ✅ Get latest CSV
+    csv_files = [
+        os.path.join(CSV_DIR, f)
+        for f in os.listdir(CSV_DIR)
+        if f.endswith(".csv")
+    ]
+
+    if not csv_files:
+        return "No CSV data available", 500
+
+    latest_csv = max(csv_files, key=os.path.getmtime)
+
+    zones, inspections = run_smart_meter_ai_pipeline(latest_csv)
+
+    # ✅ Create PDF file
+    pdf_path = os.path.join(BASE_DIR, "data", "report.pdf")
+
+    c = canvas.Canvas(pdf_path, pagesize=letter)
+    width, height = letter
+
+    y = height - 40
+
+    # ✅ Title
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, "GridSentinel AI Report")
+    y -= 30
+
+    # ✅ Zones Section
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Zones Summary")
+    y -= 20
+
+    c.setFont("Helvetica", 10)
+
+    for _, row in zones.iterrows():
+        text = f"Zone: {row.get('zone_id', '')} | Load: {row.get('forecast_load', '')} | Risk: {row.get('risk_level', '')}"
+        c.drawString(50, y, text)
+        y -= 15
+
+        if y < 50:
+            c.showPage()
+            y = height - 40
+
+    # ✅ Page break
+    c.showPage()
+    y = height - 40
+
+    # ✅ Inspections Section
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Inspection Alerts")
+    y -= 20
+
+    c.setFont("Helvetica", 10)
+
+    for _, row in inspections.iterrows():
+        text = f"Meter: {row.get('meter_id', '')} | Score: {row.get('anomaly_score', '')}"
+        c.drawString(50, y, text)
+        y -= 15
+
+        if y < 50:
+            c.showPage()
+            y = height - 40
+
+    # ✅ Save PDF
+    c.save()
+
+    return send_file(pdf_path, as_attachment=True)
+# -------------------------------------------------
 # ✅ ADMIN PAGE
 # -------------------------------------------------
 @app.route("/admin")
 def admin():
     if "user" not in session:
         return redirect("/login")
+    # ONLY ADMIN ALLOWED
+    if session.get("role")!="admin":
+        return "Access Denied",403
 
     users_df = pd.read_excel(USERS_FILE) if os.path.exists(USERS_FILE) else pd.DataFrame()
     audit_df = pd.read_excel(AUDIT_FILE) if os.path.exists(AUDIT_FILE) else pd.DataFrame()
@@ -175,6 +299,27 @@ def admin():
         users=users_df,
         audit=audit_df
     )
+# -------------------------------------------------
+# ✅ CLEAR LOGS
+# -------------------------------------------------
+@app.route("/clear-logs")
+def clear_logs():
+
+    if "user" not in session or session.get("role", "").lower() != "admin":
+        return "Access Denied", 403
+
+    if not os.path.exists(AUDIT_FILE):
+        return redirect("/admin")
+
+    df = pd.read_excel(AUDIT_FILE)
+
+    # ✅ Keep only latest half
+    half_index = len(df) // 2
+    df = df.iloc[half_index:]
+
+    df.to_excel(AUDIT_FILE, index=False)
+
+    return redirect("/admin")
 
 # ============================================================
 # PROFILE PAGE
